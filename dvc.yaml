@@ -1,0 +1,35 @@
+stages:
+  download_era5:
+    cmd: python -m floodcast.data.download_era5
+    deps:
+      - src/floodcast/data/download_era5.py
+      - src/floodcast/config.py
+    outs:
+      - data/raw/era5/
+
+  download_chirps:
+    cmd: python -m floodcast.data.download_chirps
+    deps:
+      - src/floodcast/data/download_chirps.py
+      - src/floodcast/config.py
+    outs:
+      - data/raw/chirps/
+
+  download_glofas:
+    cmd: python -m floodcast.data.download_glofas
+    deps:
+      - src/floodcast/data/download_glofas.py
+      - src/floodcast/config.py
+    outs:
+      - data/raw/glofas/
+
+  process:
+    cmd: python -m floodcast.data.process
+    deps:
+      - src/floodcast/data/process.py
+      - src/floodcast/config.py
+      - data/raw/era5/
+      - data/raw/chirps/
+      - data/raw/glofas/
+    outs:
+      - data/processed/features_raw.parquet
