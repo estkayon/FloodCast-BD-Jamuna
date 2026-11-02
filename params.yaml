@@ -1,0 +1,65 @@
+study_area:
+  name: "Jamuna River Basin - Sirajganj"
+  lat_min: 24.0
+  lat_max: 25.5
+  lon_min: 89.0
+  lon_max: 90.5
+
+time_range:
+  start: 2000
+  end: 2025
+
+feature_sets:
+  set_a:
+    name: "Rainfall Only"
+    features:
+      - daily_rainfall
+  set_b:
+    name: "Rainfall + Discharge"
+    features:
+      - daily_rainfall
+      - discharge
+  set_c:
+    name: "Full Feature Set"
+    features:
+      - daily_rainfall
+      - discharge
+      - temperature_2m
+      - soil_moisture_layer1
+      - soil_moisture_layer2
+      - wind_u_10m
+      - wind_v_10m
+
+xgboost:
+  n_estimators: 300
+  max_depth: 6
+  learning_rate: 0.1
+  subsample: 0.8
+  colsample_bytree: 0.8
+  optuna_trials: 30
+
+lstm:
+  hidden_size: 64
+  num_layers: 2
+  dropout: 0.2
+  sequence_length: 14
+  forecast_horizon: 3
+  batch_size: 32
+  max_epochs: 100
+  learning_rate: 0.001
+  patience: 15
+
+physics:
+  lambda_grid:
+    - 0.01
+    - 0.05
+    - 0.1
+    - 0.5
+
+evaluation:
+  holdout_years:
+    - 2023
+    - 2024
+    - 2025
+  cv_strategy: "leave_one_year_out"
+  bootstrap_iterations: 100
