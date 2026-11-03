@@ -1,6 +1,6 @@
 # src/floodcast/dashboard/views/model_comparison.py
 
-"""Page 3: Model comparison — blue palette."""
+"""Model comparison — Slate + Blue theme."""
 
 from __future__ import annotations
 
@@ -11,25 +11,28 @@ import streamlit as st
 from floodcast.dashboard.api_client import get_metrics
 
 COLORS = {
-    "XGBoost": "#80aad3",
-    "LSTM": "#3f6593",
-    "LSTM+Physics": "#1b3554",
+    "XGBoost": "#3b82f6",
+    "LSTM": "#8b5cf6",
+    "LSTM+Physics": "#22c55e",
 }
 
 
 def _demo_data() -> pd.DataFrame:
     rows = [
-        ("XGBoost", "Rain only", 82),
-        ("XGBoost", "Rain + River", 87),
-        ("XGBoost", "All data", 89),
-        ("LSTM", "Rain only", 80),
-        ("LSTM", "Rain + River", 86),
-        ("LSTM", "All data", 88),
-        ("LSTM+Physics", "Rain only", 83),
-        ("LSTM+Physics", "Rain + River", 89),
-        ("LSTM+Physics", "All data", 91),
+        ("XGBoost", "Rain only", 82, 0.78, 0.84, 42),
+        ("XGBoost", "Rain + River", 87, 0.85, 0.88, 42),
+        ("XGBoost", "All data", 89, 0.87, 0.90, 42),
+        ("LSTM", "Rain only", 80, 0.76, 0.82, 185),
+        ("LSTM", "Rain + River", 86, 0.83, 0.87, 185),
+        ("LSTM", "All data", 88, 0.86, 0.89, 185),
+        ("LSTM+Physics", "Rain only", 83, 0.80, 0.85, 190),
+        ("LSTM+Physics", "Rain + River", 89, 0.87, 0.90, 190),
+        ("LSTM+Physics", "All data", 91, 0.89, 0.92, 190),
     ]
-    return pd.DataFrame(rows, columns=["Model", "Data", "Accuracy"])
+    return pd.DataFrame(
+        rows,
+        columns=["Model", "Data", "Accuracy", "F1", "AUC", "Time (s)"],
+    )
 
 
 def render() -> None:
@@ -41,46 +44,83 @@ def render() -> None:
     except Exception:
         pass
 
-    # ---- Plain language explanation ----
     st.markdown("""
     <div class="card card-accent">
-        <strong style="color:#1b3554;">
-            We tested 3 prediction methods:</strong>
+        <strong style="color:#f1f5f9;">
+            3 prediction methods tested:</strong>
         <table style="margin-top:12px; width:100%;
             border-collapse:collapse;">
-        <tr style="border-bottom:1px solid #c0e6fd;">
-            <td style="padding:8px; font-weight:600; color:#80aad3;">
+        <tr style="border-bottom:1px solid #334155;">
+            <td style="padding:8px; font-weight:600; color:#3b82f6;">
                 XGBoost</td>
-            <td style="padding:8px; color:#3f6593;">
-                Finds patterns in data tables. Fast and reliable.</td>
+            <td style="padding:8px; color:#cbd5e1;">
+                Finds patterns in data tables.
+                Fast and reliable.</td>
         </tr>
-        <tr style="border-bottom:1px solid #c0e6fd;">
-            <td style="padding:8px; font-weight:600; color:#3f6593;">
+        <tr style="border-bottom:1px solid #334155;">
+            <td style="padding:8px; font-weight:600; color:#8b5cf6;">
                 LSTM</td>
-            <td style="padding:8px; color:#3f6593;">
-                Reads data like a diary — remembers what happened
-                yesterday and last week.</td>
+            <td style="padding:8px; color:#cbd5e1;">
+                Reads data like a diary — remembers yesterday
+                and last week.</td>
         </tr>
         <tr>
-            <td style="padding:8px; font-weight:600; color:#1b3554;">
+            <td style="padding:8px; font-weight:600; color:#22c55e;">
                 LSTM + Physics</td>
-            <td style="padding:8px; color:#3f6593;">
-                Same as LSTM but also knows how water actually behaves
-                (more rain → higher river → more flooding).</td>
+            <td style="padding:8px; color:#cbd5e1;">
+                Same as LSTM but knows how water behaves
+                (more rain → more flooding).</td>
         </tr>
         </table>
     </div>
     """, unsafe_allow_html=True)
 
     st.info(
-        "⚠️ Demo numbers shown. Real results appear after training.",
+        "⚠️ Demo numbers. Real results after training.",
         icon="ℹ️",
     )
 
     df = _demo_data()
 
-    # ---- Best model chart ----
-    st.subheader("Best Method (using all data)")
+    st.subheader("Detailed Metrics")
+
+    best = df[df["Data"] == "All data"]
+    c1, c2, c3 = st.columns(3)
+    for i, (_, row) in enumerate(best.iterrows()):
+        col = [c1, c2, c3][i]
+        clr = COLORS[row["Model"]]
+        with col:
+            st.markdown(f"""
+            <div class="card" style="text-align:center;
+                border-top:2px solid {clr};">
+                <div style="font-size:14px; font-weight:600;
+                    color:{clr};">{row['Model']}</div>
+                <div style="margin:12px 0;">
+                    <div class="label">Accuracy</div>
+                    <div style="font-size:22px; font-weight:700;
+                        color:#f1f5f9;">{row['Accuracy']}%</div>
+                </div>
+                <div style="display:flex; justify-content:space-around;">
+                    <div>
+                        <div class="label">F1</div>
+                        <div style="color:#f1f5f9; font-weight:600;">
+                            {row['F1']:.2f}</div>
+                    </div>
+                    <div>
+                        <div class="label">AUC</div>
+                        <div style="color:#f1f5f9; font-weight:600;">
+                            {row['AUC']:.2f}</div>
+                    </div>
+                    <div>
+                        <div class="label">Time</div>
+                        <div style="color:#f1f5f9; font-weight:600;">
+                            {int(row['Time (s)'])}s</div>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+    st.subheader("Best Method (all data)")
 
     best = df[df["Data"] == "All data"]
 
@@ -91,7 +131,7 @@ def render() -> None:
         marker_color=[COLORS[m] for m in best["Model"]],
         text=[f"{a}%" for a in best["Accuracy"]],
         textposition="outside",
-        textfont={"size": 14, "color": "#1b3554"},
+        textfont={"size": 14, "color": "#e2e8f0"},
     ))
 
     fig.update_layout(
@@ -99,25 +139,25 @@ def render() -> None:
         yaxis_range=[70, 100],
         height=380,
         margin={"t": 10, "b": 30, "l": 50, "r": 20},
-        plot_bgcolor="#163636",
-        paper_bgcolor="#163636",
-        font={"family": "sans-serif", "color": "#D9FAF4", "size": 13},
+        plot_bgcolor="#0f172a",
+        paper_bgcolor="#0f172a",
+        font={"family": "sans-serif", "color": "#94a3b8", "size": 12},
         showlegend=False,
+        xaxis={"gridcolor": "#1e293b", "linecolor": "#334155"},
+        yaxis={"gridcolor": "#1e293b", "linecolor": "#334155"},
     )
     st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("""
-    <div class="card" style="border-left:4px solid #1b3554;">
-        <strong style="color:#1b3554;">
+    <div class="card" style="border-left:3px solid #22c55e;">
+        <strong style="color:#22c55e;">
             Winner: LSTM + Physics (91%)</strong>
-        <br><span style="color:#3f6593;">
-        Adding physics rules makes the model smarter. It knows that
-        more rain should mean higher flood risk — so it won't make
-        illogical predictions.</span>
+        <br><span style="color:#cbd5e1;">
+        Physics rules prevent illogical predictions — the model
+        knows more rain means higher flood risk.</span>
     </div>
     """, unsafe_allow_html=True)
 
-    # ---- Does more data help? ----
     st.subheader("Does more data help?")
 
     fig2 = go.Figure()
@@ -129,10 +169,10 @@ def render() -> None:
             mode="lines+markers+text",
             name=model,
             line={"color": COLORS[model], "width": 3},
-            marker={"size": 9},
+            marker={"size": 8},
             text=[f"{a}%" for a in sub["Accuracy"]],
             textposition="top center",
-            textfont={"size": 11},
+            textfont={"size": 11, "color": "#cbd5e1"},
         ))
 
     fig2.update_layout(
@@ -141,17 +181,21 @@ def render() -> None:
         xaxis_title="Data used",
         height=380,
         margin={"t": 10, "b": 30, "l": 50, "r": 20},
-        plot_bgcolor="#163636",
-        paper_bgcolor="#163636",
-        font={"family": "sans-serif", "color": "#D9FAF4", "size": 13},
-        legend={"orientation": "h", "y": -0.15, "font": {"size": 12}},
+        plot_bgcolor="#0f172a",
+        paper_bgcolor="#0f172a",
+        font={"family": "sans-serif", "color": "#94a3b8", "size": 12},
+        legend={"orientation": "h", "y": -0.15,
+                "font": {"size": 11, "color": "#94a3b8"}},
+        xaxis={"gridcolor": "#1e293b", "linecolor": "#334155"},
+        yaxis={"gridcolor": "#1e293b", "linecolor": "#334155"},
     )
     st.plotly_chart(fig2, use_container_width=True)
 
     st.markdown("""
     <div class="card card-accent">
-        <strong>Yes!</strong> Every model gets better with more data.
-        The biggest improvement comes from adding river water levels
-        to rainfall data.
+        <strong style="color:#f1f5f9;">Yes!</strong>
+        <span style="color:#cbd5e1;">
+        Every model improves with more data. Adding river levels
+        to rainfall gives the biggest jump.</span>
     </div>
     """, unsafe_allow_html=True)

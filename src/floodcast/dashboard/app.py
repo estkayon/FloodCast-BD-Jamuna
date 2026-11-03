@@ -13,243 +13,222 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ---- Clean CSS with user color palette ----
+# ---- Slate + Blue Professional Theme ----
 st.markdown("""
 <style>
-    /* Hide default sidebar completely */
+    /* Hide sidebar */
     [data-testid="stSidebar"] {display: none;}
     section[data-testid="stSidebar"] {display: none;}
     button[kind="header"] {display: none;}
-
-    /* Hide hamburger, header, footer */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* Page background — Deep Lagoon */
+    /* Background */
     .stApp {
-        background-color: #0F2A2A;
+        background-color: #0f172a;
     }
 
-    /* ---- Top Navbar — Teal Wave ---- */
+    /* ---- Navbar ---- */
     .navbar {
-        background: linear-gradient(135deg, #00BFA6, #00a08a);
+        background: #1e293b;
         padding: 14px 32px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         border-radius: 0 0 12px 12px;
         margin: -1rem -1rem 24px -1rem;
-        box-shadow: 0 2px 12px rgba(0,191,166,0.3);
+        border-bottom: 1px solid #334155;
     }
     .navbar-brand {
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 700;
-        color: #0F2A2A;
-        letter-spacing: 0.5px;
+        color: #f1f5f9;
     }
     .navbar-brand span {
         font-weight: 400;
-        color: #0F2A2A;
-        opacity: 0.7;
+        color: #94a3b8;
         font-size: 13px;
         margin-left: 10px;
     }
     .navbar-links {
         display: flex;
-        gap: 6px;
+        gap: 4px;
     }
     .nav-btn {
-        background: transparent;
-        color: #0F2A2A;
-        border: none;
-        padding: 8px 18px;
-        border-radius: 8px;
+        color: #94a3b8;
+        padding: 8px 16px;
+        border-radius: 6px;
         font-size: 14px;
         font-weight: 500;
-        cursor: pointer;
-        transition: background 0.2s;
-        text-decoration: none;
-    }
-    .nav-btn:hover {
-        background: rgba(15,42,42,0.12);
     }
     .nav-btn.active {
-        background: rgba(15,42,42,0.2);
-        color: #0F2A2A;
+        background: #334155;
+        color: #f1f5f9;
         font-weight: 600;
     }
 
-    /* ---- Cards — dark card on dark bg ---- */
+    /* ---- Cards ---- */
     .card {
-        background: #163636;
-        border-radius: 12px;
+        background: #1e293b;
+        border-radius: 10px;
         padding: 20px 24px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         margin-bottom: 12px;
-        border: 1px solid rgba(0,191,166,0.15);
+        border: 1px solid #334155;
     }
     .card-accent {
-        border-left: 4px solid #00BFA6;
+        border-left: 3px solid #3b82f6;
     }
 
-    /* ---- Risk cards (semantic — slightly adapted) ---- */
+    /* ---- Risk cards ---- */
     .risk-safe {
-        background: linear-gradient(135deg, #1a3d2a, #163636);
-        border-left: 4px solid #4caf50;
-        border-radius: 12px;
+        background: #1e293b;
+        border-left: 3px solid #22c55e;
+        border: 1px solid #334155;
+        border-left: 3px solid #22c55e;
+        border-radius: 10px;
         padding: 24px;
     }
     .risk-caution {
-        background: linear-gradient(135deg, #3d3520, #163636);
-        border-left: 4px solid #ffc107;
-        border-radius: 12px;
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-left: 3px solid #eab308;
+        border-radius: 10px;
         padding: 24px;
     }
     .risk-warning {
-        background: linear-gradient(135deg, #3d2a1a, #163636);
-        border-left: 4px solid #ff9800;
-        border-radius: 12px;
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-left: 3px solid #f97316;
+        border-radius: 10px;
         padding: 24px;
     }
     .risk-danger {
-        background: linear-gradient(135deg, #3d1a1a, #163636);
-        border-left: 4px solid #f44336;
-        border-radius: 12px;
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-left: 3px solid #ef4444;
+        border-radius: 10px;
         padding: 24px;
     }
 
-    /* ---- Labels — Teal Wave ---- */
+    /* ---- Typography ---- */
     .label {
-        font-size: 12px;
-        color: #00BFA6;
+        font-size: 11px;
+        color: #94a3b8;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         font-weight: 600;
     }
-
-    /* ---- Big numbers — Aqua Silk ---- */
     .big-num {
         font-size: 32px;
         font-weight: 700;
-        color: #D9FAF4;
+        color: #f1f5f9;
         margin: 4px 0;
     }
+    h1 { color: #f1f5f9 !important; font-weight: 700 !important; }
+    h2, h3 { color: #e2e8f0 !important; }
 
-    /* ---- Headings — Aqua Silk ---- */
-    h1 {
-        color: #D9FAF4 !important;
-        font-weight: 700 !important;
-    }
-    h2, h3 {
-        color: #D9FAF4 !important;
-    }
-
-    /* ---- All Streamlit text — light on dark ---- */
+    /* ---- Streamlit text ---- */
     .stMarkdown, .stMarkdown p, .stCaption {
-        color: #D9FAF4 !important;
+        color: #cbd5e1 !important;
     }
     .stSelectbox label, .stRadio label {
-        color: #D9FAF4 !important;
-    }
-    .stExpander {
-        border-color: #00BFA6 !important;
+        color: #cbd5e1 !important;
     }
 
-    /* ---- Card inner text ---- */
-    .card strong {
-        color: #D9FAF4;
+    /* ---- Card text ---- */
+    .card strong, .risk-safe strong, .risk-caution strong,
+    .risk-warning strong, .risk-danger strong {
+        color: #f1f5f9;
     }
-    .card p, .card td, .card li, .card span {
-        color: #D9FAF4;
-    }
-
-    /* ---- Risk card text (light on dark) ---- */
-    .risk-safe, .risk-caution, .risk-warning, .risk-danger {
-        color: #D9FAF4;
+    .card p, .card td, .card li, .card span,
+    .card ol li, .card ul li {
+        color: #cbd5e1;
     }
     .risk-safe div, .risk-caution div,
     .risk-warning div, .risk-danger div {
-        color: #D9FAF4 !important;
+        color: #cbd5e1 !important;
     }
 
-    /* ---- Streamlit button overrides ---- */
+    /* ---- Buttons ---- */
     .stButton > button {
-        background-color: #163636 !important;
-        color: #D9FAF4 !important;
-        border: 1px solid #00BFA6 !important;
-        border-radius: 8px !important;
+        background-color: #1e293b !important;
+        color: #cbd5e1 !important;
+        border: 1px solid #334155 !important;
+        border-radius: 6px !important;
     }
     .stButton > button:hover {
-        background-color: #00BFA6 !important;
-        color: #0F2A2A !important;
+        background-color: #334155 !important;
+        color: #f1f5f9 !important;
     }
     .stButton > button[kind="primary"] {
-        background-color: #00BFA6 !important;
-        color: #0F2A2A !important;
+        background-color: #3b82f6 !important;
+        color: #ffffff !important;
+        border: none !important;
         font-weight: 600 !important;
     }
 
-    /* ---- Selectbox/dropdown dark theme ---- */
+    /* ---- Selectbox ---- */
     .stSelectbox > div > div {
-        background-color: #163636 !important;
-        color: #D9FAF4 !important;
-        border-color: #00BFA6 !important;
+        background-color: #1e293b !important;
+        color: #cbd5e1 !important;
+        border-color: #334155 !important;
     }
 
-    /* ---- Warning banner ---- */
+    /* ---- Footer banner ---- */
     .warning-banner {
-        background: linear-gradient(135deg, #00BFA6, #00a08a);
-        color: #0F2A2A;
-        padding: 8px 16px;
+        background: #1e293b;
+        color: #94a3b8;
+        padding: 10px 16px;
         border-radius: 8px;
         font-size: 12px;
         text-align: center;
-        margin-top: 20px;
-        font-weight: 500;
+        margin-top: 24px;
+        border: 1px solid #334155;
     }
 
-    /* ---- Plotly chart dark bg ---- */
+    /* ---- Charts container ---- */
     .stPlotlyChart {
-        background: #163636;
-        border-radius: 12px;
+        background: #1e293b;
+        border-radius: 10px;
         padding: 8px;
+        border: 1px solid #334155;
     }
 
-    /* ---- Divider ---- */
-    hr {
-        border-color: rgba(0,191,166,0.3) !important;
-    }
-
-    /* ---- Info box override ---- */
+     /* ---- Misc ---- */
+    hr { border-color: #f1f5f9 !important; }
     .stAlert {
-        background-color: #163636 !important;
-        color: #D9FAF4 !important;
-        border: 1px solid #00BFA6 !important;
+        background-color: #1e293b !important;
+        color: #f1f5f9 !important;
+        border: 1px solid #f1f5f9 !important;
     }
-
-    /* ---- Expander text ---- */
-    .streamlit-expanderHeader {
-        color: #D9FAF4 !important;
+    .stAlert p, .stAlert div, .stAlert span {
+        color: #f1f5f9 !important;
     }
-    .streamlit-expanderContent {
-        color: #D9FAF4 !important;
-    }
+    .streamlit-expanderHeader { color: #f1f5f9 !important; }
+    .streamlit-expanderContent { color: #f1f5f9 !important; }
+    .stExpander { border-color: #f1f5f9 !important; }
+    .stExpander summary { color: #f1f5f9 !important; }
+    .stExpander summary span { color: #f1f5f9 !important; }
+    .stExpander summary p { color: #f1f5f9 !important; }
+    .stExpander details { color: #f1f5f9 !important; }
+    [data-testid="stExpander"] summary { color: #f1f5f9 !important; }
+    [data-testid="stExpander"] summary span { color: #f1f5f9 !important; }
+    [data-testid="stExpanderDetails"] { color: #f1f5f9 !important; }
+    [data-testid="stExpanderDetails"] p { color: #f1f5f9 !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# ---- Navbar with Streamlit-compatible navigation ----
-# We use query params to handle page state
+# ---- Navbar ----
 if "page" not in st.session_state:
     st.session_state.page = "Current Risk"
 
 PAGES = ["Current Risk", "Historical", "Model Comparison", "About"]
 
-# Build navbar HTML
 nav_links = ""
 for p in PAGES:
     active = "active" if p == st.session_state.page else ""
-    nav_links += f'<span class="nav-btn {active}" id="nav-{p}">{p}</span>'
+    nav_links += f'<span class="nav-btn {active}">{p}</span>'
 
 st.markdown(f"""
 <div class="navbar">
@@ -263,7 +242,6 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Streamlit buttons row for actual navigation (styled minimal)
 cols = st.columns(len(PAGES))
 for i, p in enumerate(PAGES):
     with cols[i]:
@@ -278,7 +256,6 @@ for i, p in enumerate(PAGES):
 
 st.divider()
 
-# ---- Page routing ----
 if st.session_state.page == "Current Risk":
     from floodcast.dashboard.views.current_risk import render
     render()
@@ -292,7 +269,6 @@ elif st.session_state.page == "About":
     from floodcast.dashboard.views.about import render
     render()
 
-# Footer
 st.markdown("""
 <div class="warning-banner">
     ⚠️ Research prototype — Not for emergency decisions.
