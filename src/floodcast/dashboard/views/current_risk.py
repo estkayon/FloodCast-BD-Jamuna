@@ -12,6 +12,7 @@ import streamlit as st
 
 from floodcast.dashboard.api_client import get_features, get_predictions, get_status
 
+
 def _format_time(raw: object) -> str:
     """Turn ISO timestamp into readable format like '03 Nov 2026, 09:49 AM'."""
     from datetime import datetime

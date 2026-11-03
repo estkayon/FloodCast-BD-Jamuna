@@ -119,7 +119,7 @@ def render() -> None:
                 </div>
             </div>
             """, unsafe_allow_html=True)
-            
+
     st.subheader("Best Method (all data)")
 
     best = df[df["Data"] == "All data"]
