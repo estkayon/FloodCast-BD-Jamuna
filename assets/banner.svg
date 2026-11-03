@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="50%" style="stop-color:#1e3a5f"/>
+      <stop offset="100%" style="stop-color:#0f172a"/>
+    </linearGradient>
+    <linearGradient id="wave1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.6"/>
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0.1"/>
+    </linearGradient>
+    <linearGradient id="wave2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#60a5fa;stop-opacity:0.4"/>
+      <stop offset="100%" style="stop-color:#60a5fa;stop-opacity:0.05"/>
+    </linearGradient>
+    <linearGradient id="wave3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#93c5fd;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#93c5fd;stop-opacity:0.02"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="300" fill="url(#bg)"/>
+
+  <!-- Animated wave 3 (back) -->
+  <path fill="url(#wave3)">
+    <animate attributeName="d" dur="8s" repeatCount="indefinite" values="
+      M0,220 C200,180 400,260 600,220 C800,180 1000,240 1200,200 L1200,300 L0,300 Z;
+      M0,240 C200,200 400,240 600,200 C800,240 1000,200 1200,230 L1200,300 L0,300 Z;
+      M0,220 C200,180 400,260 600,220 C800,180 1000,240 1200,200 L1200,300 L0,300 Z
+    "/>
+  </path>
+
+  <!-- Animated wave 2 (mid) -->
+  <path fill="url(#wave2)">
+    <animate attributeName="d" dur="6s" repeatCount="indefinite" values="
+      M0,240 C150,200 350,270 550,230 C750,190 950,260 1200,220 L1200,300 L0,300 Z;
+      M0,230 C150,260 350,210 550,250 C750,220 950,250 1200,240 L1200,300 L0,300 Z;
+      M0,240 C150,200 350,270 550,230 C750,190 950,260 1200,220 L1200,300 L0,300 Z
+    "/>
+  </path>
+
+  <!-- Animated wave 1 (front) -->
+  <path fill="url(#wave1)">
+    <animate attributeName="d" dur="4s" repeatCount="indefinite" values="
+      M0,260 C200,230 400,280 600,250 C800,220 1000,270 1200,240 L1200,300 L0,300 Z;
+      M0,250 C200,270 400,240 600,270 C800,250 1000,240 1200,260 L1200,300 L0,300 Z;
+      M0,260 C200,230 400,280 600,250 C800,220 1000,270 1200,240 L1200,300 L0,300 Z
+    "/>
+  </path>
+
+  <!-- Rain drops -->
+  <g opacity="0.4">
+    <line x1="100" y1="0" x2="95" y2="30" stroke="#93c5fd" stroke-width="1.5">
+      <animate attributeName="y1" values="-20;300" dur="1.5s" repeatCount="indefinite"/>
+      <animate attributeName="y2" values="10;330" dur="1.5s" repeatCount="indefinite"/>
+    </line>
+    <line x1="250" y1="0" x2="245" y2="30" stroke="#93c5fd" stroke-width="1">
+      <animate attributeName="y1" values="-40;280" dur="1.8s" repeatCount="indefinite"/>
+      <animate attributeName="y2" values="-10;310" dur="1.8s" repeatCount="indefinite"/>
+    </line>
+    <line x1="400" y1="0" x2="395" y2="25" stroke="#93c5fd" stroke-width="1.5">
+      <animate attributeName="y1" values="-10;290" dur="1.3s" repeatCount="indefinite"/>
+      <animate attributeName="y2" values="15;315" dur="1.3s" repeatCount="indefinite"/>
+    </line>
+    <line x1="700" y1="0" x2="695" y2="30" stroke="#93c5fd" stroke-width="1">
+      <animate attributeName="y1" values="-30;270" dur="2s" repeatCount="indefinite"/>
+      <animate attributeName="y2" values="0;300" dur="2s" repeatCount="indefinite"/>
+    </line>
+    <line x1="850" y1="0" x2="845" y2="20" stroke="#93c5fd" stroke-width="1.5">
+      <animate attributeName="y1" values="-50;250" dur="1.6s" repeatCount="indefinite"/>
+      <animate attributeName="y2" values="-30;270" dur="1.6s" repeatCount="indefinite"/>
+    </line>
+    <line x1="1050" y1="0" x2="1045" y2="28" stroke="#93c5fd" stroke-width="1">
+      <animate attributeName="y1" values="0;300" dur="1.4s" repeatCount="indefinite"/>
+      <animate attributeName="y2" values="28;328" dur="1.4s" repeatCount="indefinite"/>
+    </line>
+    <line x1="550" y1="0" x2="545" y2="22" stroke="#93c5fd" stroke-width="1">
+      <animate attributeName="y1" values="-60;240" dur="1.7s" repeatCount="indefinite"/>
+      <animate attributeName="y2" values="-38;262" dur="1.7s" repeatCount="indefinite"/>
+    </line>
+    <line x1="950" y1="0" x2="945" y2="26" stroke="#93c5fd" stroke-width="1.5">
+      <animate attributeName="y1" values="-15;285" dur="1.9s" repeatCount="indefinite"/>
+      <animate attributeName="y2" values="11;311" dur="1.9s" repeatCount="indefinite"/>
+    </line>
+  </g>
+
+  <!-- Title -->
+  <text x="600" y="100" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="52" font-weight="700" fill="#f1f5f9" filter="url(#glow)">
+    🌊 FloodCast BD
+  </text>
+
+  <!-- Subtitle with fade -->
+  <text x="600" y="145" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#94a3b8">
+    Physics-Constrained Flood Nowcasting for Jamuna River Basin
+  </text>
+
+  <!-- Tags -->
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#cbd5e1">
+    <rect x="340" y="165" rx="12" ry="12" width="90" height="24" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="385" y="181" text-anchor="middle">PyTorch</text>
+
+    <rect x="445" y="165" rx="12" ry="12" width="90" height="24" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="490" y="181" text-anchor="middle">XGBoost</text>
+
+    <rect x="550" y="165" rx="12" ry="12" width="90" height="24" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="595" y="181" text-anchor="middle">FastAPI</text>
+
+    <rect x="655" y="165" rx="12" ry="12" width="100" height="24" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="705" y="181" text-anchor="middle">Streamlit</text>
+
+    <rect x="770" y="165" rx="12" ry="12" width="90" height="24" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="815" y="181" text-anchor="middle">MLflow</text>
+  </g>
+</svg>
