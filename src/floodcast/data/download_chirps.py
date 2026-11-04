@@ -1,18 +1,18 @@
-"""Download CHIRPS daily rainfall data via HTTP."""
+# src/floodcast/data/download_chirps.py
+
+"""Download CHIRPS rainfall data from NOAA ERDDAP."""
 
 import logging
+import time
 from pathlib import Path
 
 import requests
-import xarray as xr
 
 from floodcast.config import settings
 
 logger = logging.getLogger(__name__)
 
-CHIRPS_BASE_URL = (
-    "https://data.chc.ucsb.edu/products/CHIRPS-2.0/global_daily/netcdf/p05"
-)
+ERDDAP_BASE = "https://coastwatch.pfeg.noaa.gov/erddap/griddap/chirps20GlobalDailyP05.nc"
 
 
 def download_chirps(
@@ -20,7 +20,9 @@ def download_chirps(
     year_start: int | None = None,
     year_end: int | None = None,
 ) -> Path:
-    """Download CHIRPS daily rainfall for each year.
+    """Download CHIRPS daily rainfall for the study area via NOAA ERDDAP.
+
+    Downloads one year at a time, subsetted to the study area.
 
     Args:
         output_dir: Directory to save files. Defaults to data/raw/chirps/.
@@ -30,42 +32,63 @@ def download_chirps(
     Returns:
         Path to the output directory containing downloaded files.
     """
-    output_dir = output_dir or (settings.ROOT_DIR / "data" / "raw" / "chirps")
+    from floodcast.config import ROOT_DIR
+    output_dir = output_dir or (ROOT_DIR / "data" / "raw" / "chirps")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     year_start = year_start or settings.year_start
     year_end = year_end or settings.year_end
 
+    total = year_end - year_start + 1
+    done = 0
+
     for year in range(year_start, year_end + 1):
         output_file = output_dir / f"chirps_{year}.nc"
-        if output_file.exists():
-            logger.info("Skipping %d — file exists: %s", year, output_file)
+        if output_file.exists() and output_file.stat().st_size > 0:
+            done += 1
+            logger.info("[%d/%d] Skipping %d — exists", done, total, year)
             continue
 
-        url = f"{CHIRPS_BASE_URL}/chirps-v2.0.{year}.days_p05.nc"
-        logger.info("Downloading CHIRPS for %d from %s ...", year, url)
+        if output_file.exists():
+            output_file.unlink()
 
-        response = requests.get(url, stream=True, timeout=300)
-        response.raise_for_status()
+        done += 1
+        logger.info("[%d/%d] Downloading CHIRPS %d ...", done, total, year)
 
-        tmp_file = output_dir / f"chirps_{year}_full.nc"
-        with open(tmp_file, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
-
-        # Clip to study area
-        logger.info("Clipping to study area ...")
-        ds = xr.open_dataset(tmp_file)
-        ds_clipped = ds.sel(
-            latitude=slice(settings.lat_max, settings.lat_min),
-            longitude=slice(settings.lon_min, settings.lon_max),
+        # ERDDAP subset query: precip[time][latitude][longitude]
+        url = (
+            f"{ERDDAP_BASE}?precip"
+            f"[({year}-01-01T00:00:00Z):1:({year}-12-31T00:00:00Z)]"
+            f"[({settings.lat_min}):1:({settings.lat_max})]"
+            f"[({settings.lon_min}):1:({settings.lon_max})]"
         )
-        ds_clipped.to_netcdf(output_file)
-        ds.close()
-        ds_clipped.close()
-        tmp_file.unlink()
 
-        logger.info("Saved: %s", output_file)
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
+            try:
+                response = requests.get(url, stream=True, timeout=600)
+                response.raise_for_status()
+
+                with open(output_file, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+
+                logger.info("[%d/%d] Saved: %s", done, total, output_file.name)
+                break
+            except Exception as e:
+                logger.warning(
+                    "Attempt %d/%d failed for %d: %s",
+                    attempt, max_retries, year, e,
+                )
+                if output_file.exists():
+                    output_file.unlink()
+                if attempt < max_retries:
+                    logger.info("Waiting 30s before retry...")
+                    time.sleep(30)
+                else:
+                    logger.error(
+                        "Giving up on %d after %d attempts", year, max_retries
+                    )
 
     return output_dir
 

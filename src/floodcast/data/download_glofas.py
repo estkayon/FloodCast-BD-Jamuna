@@ -1,3 +1,5 @@
+# src/floodcast/data/download_glofas.py
+
 """Download GloFAS river discharge data from CDS API."""
 
 import logging
@@ -25,16 +27,14 @@ def download_glofas(
     Returns:
         Path to the output directory containing downloaded files.
     """
-    output_dir = output_dir or (settings.ROOT_DIR / "data" / "raw" / "glofas")
+    from floodcast.config import ROOT_DIR
+    output_dir = output_dir or (ROOT_DIR / "data" / "raw" / "glofas")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     year_start = year_start or settings.year_start
     year_end = year_end or settings.year_end
 
-    client = cdsapi.Client(
-        url=settings.cds_api_url,
-        key=settings.cds_api_key,
-    )
+    client = cdsapi.Client()
 
     area = [settings.lat_max, settings.lon_min, settings.lat_min, settings.lon_max]
 
@@ -60,7 +60,7 @@ def download_glofas(
                 "hmonth": months,
                 "hday": days,
                 "area": area,
-                "format": "grib",
+                "data_format": "grib",
             },
             str(output_file),
         )
