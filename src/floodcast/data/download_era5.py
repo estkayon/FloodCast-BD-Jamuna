@@ -88,14 +88,20 @@ def download_era5(
                     logger.info("[%d/%d] Saved: %s", done, total, output_file.name)
                     break
                 except Exception as e:
-                    logger.warning("Attempt %d/%d failed for %d-%02d: %s", attempt, max_retries, year, month, e)
+                    logger.warning(
+                        "Attempt %d/%d failed for %d-%02d: %s",
+                        attempt, max_retries, year, month, e,
+                    )
                     if output_file.exists():
                         output_file.unlink()
                     if attempt < max_retries:
                         logger.info("Waiting 60s before retry...")
                         time.sleep(60)
                     else:
-                        logger.error("Giving up on %d-%02d after %d attempts", year, month, max_retries)
+                        logger.error(
+                                "Giving up on %d-%02d after %d attempts",
+                                year, month, max_retries,
+                            )
 
     return output_dir
 
