@@ -9,9 +9,8 @@ from floodcast.features.build import load_feature_sets, select_features
 from floodcast.features.engineer import engineer_features
 from floodcast.features.physics import (
     add_physics_features,
-    antecedent_rainfall_index,
-    discharge_percentile,
-    rainfall_intensity,
+    antecedent_runoff_index,
+    runoff_percentile,
     soil_moisture_anomaly,
 )
 
@@ -23,15 +22,13 @@ def raw_df() -> pd.DataFrame:
     n = 200
     dates = pd.date_range("2020-01-01", periods=n, freq="D")
     is_monsoon = ((dates.month >= 6) & (dates.month <= 10)).astype(float)
-    rainfall = np.maximum(0, np.random.gamma(2, 5 + 10 * is_monsoon))
-    discharge = np.maximum(100, 3000 + 2000 * is_monsoon + np.random.normal(0, 300, n))
+    runoff = np.maximum(0, np.random.gamma(2, 5 + 10 * is_monsoon))
     return pd.DataFrame({
         "date": dates,
-        "daily_rainfall": rainfall,
+        "runoff": runoff,
         "temperature_2m": np.random.normal(300, 3, n),
         "soil_moisture_layer1": np.random.uniform(0.2, 0.5, n),
         "soil_moisture_layer2": np.random.uniform(0.3, 0.6, n),
-        "discharge": discharge,
         "wind_u_10m": np.random.normal(0, 2, n),
         "wind_v_10m": np.random.normal(0, 2, n),
         "flood_label": np.random.randint(0, 2, n),
@@ -43,14 +40,14 @@ class TestEngineerFeatures:
 
     def test_output_has_lag_features(self, raw_df):
         result = engineer_features(raw_df)
-        assert "rainfall_lag_1d" in result.columns
-        assert "rainfall_lag_7d" in result.columns
-        assert "discharge_lag_3d" in result.columns
+        assert "runoff_lag_1d" in result.columns
+        assert "runoff_lag_7d" in result.columns
+        assert "runoff_lag_3d" in result.columns
 
     def test_output_has_rolling_features(self, raw_df):
         result = engineer_features(raw_df)
-        assert "rainfall_sum_7d" in result.columns
-        assert "rainfall_mean_14d" in result.columns
+        assert "runoff_sum_7d" in result.columns
+        assert "runoff_mean_14d" in result.columns
 
     def test_output_has_calendar_features(self, raw_df):
         result = engineer_features(raw_df)
@@ -70,12 +67,12 @@ class TestEngineerFeatures:
 class TestPhysicsFeatures:
     """Tests for physics-based features."""
 
-    def test_antecedent_rainfall_positive(self, raw_df):
-        ari = antecedent_rainfall_index(raw_df["daily_rainfall"])
+    def test_antecedent_runoff_positive(self, raw_df):
+        ari = antecedent_runoff_index(raw_df["runoff"])
         assert (ari >= 0).all()
 
-    def test_discharge_percentile_range(self, raw_df):
-        pct = discharge_percentile(raw_df["discharge"])
+    def test_runoff_percentile_range(self, raw_df):
+        pct = runoff_percentile(raw_df["runoff"])
         assert pct.min() >= 0
 
     def test_soil_moisture_anomaly_mean_near_zero(self, raw_df):
@@ -84,16 +81,11 @@ class TestPhysicsFeatures:
         )
         assert abs(anomaly.mean()) < 0.1
 
-    def test_rainfall_intensity_non_negative(self, raw_df):
-        ri = rainfall_intensity(raw_df["daily_rainfall"])
-        assert (ri >= 0).all()
-
     def test_add_physics_features_columns(self, raw_df):
         result = add_physics_features(raw_df)
-        assert "antecedent_rainfall_index" in result.columns
-        assert "discharge_pct_90" in result.columns
+        assert "antecedent_runoff_index" in result.columns
+        assert "runoff_pct_90" in result.columns
         assert "soil_moisture_anomaly" in result.columns
-        assert "rainfall_intensity" in result.columns
 
 
 class TestFeatureSets:
@@ -104,23 +96,15 @@ class TestFeatureSets:
         assert "set_a" in sets
         assert "set_b" in sets
         assert "set_c" in sets
-        assert "daily_rainfall" in sets["set_a"]
+        assert "runoff" in sets["set_a"]
 
-    def test_set_a_has_no_discharge(self, raw_df):
+    def test_set_a_basic_features(self, raw_df):
         load_feature_sets()
         engineered = engineer_features(raw_df)
         engineered = add_physics_features(engineered)
         selected = select_features(engineered, "set_a")
-        discharge_cols = [c for c in selected.columns if "discharge" in c]
-        assert len(discharge_cols) == 0
-
-    def test_set_b_has_discharge(self, raw_df):
-        load_feature_sets()
-        engineered = engineer_features(raw_df)
-        engineered = add_physics_features(engineered)
-        selected = select_features(engineered, "set_b")
-        discharge_cols = [c for c in selected.columns if "discharge" in c]
-        assert len(discharge_cols) > 0
+        assert "runoff" in selected.columns
+        assert "flood_label" in selected.columns
 
     def test_set_c_is_largest(self, raw_df):
         load_feature_sets()

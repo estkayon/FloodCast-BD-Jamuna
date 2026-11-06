@@ -1,3 +1,5 @@
+# tests/test_data_pipeline.py
+
 """Phase 2: Data pipeline tests."""
 
 
@@ -24,44 +26,32 @@ def era5_df() -> pd.DataFrame:
 
 
 @pytest.fixture
-def chirps_df() -> pd.DataFrame:
-    """Synthetic CHIRPS-like data."""
-    np.random.seed(20)
-    dates = pd.date_range("2020-01-01", periods=100, freq="D")
-    return pd.DataFrame({
-        "date": dates,
-        "daily_rainfall": np.random.gamma(2, 10, 100),
-    })
-
-
-@pytest.fixture
-def glofas_df() -> pd.DataFrame:
-    """Synthetic GloFAS-like data."""
+def runoff_df() -> pd.DataFrame:
+    """Synthetic runoff data."""
     np.random.seed(30)
     dates = pd.date_range("2020-01-01", periods=100, freq="D")
     return pd.DataFrame({
         "date": dates,
-        "discharge": np.random.exponential(5000, 100),
+        "runoff": np.random.exponential(5, 100),
     })
 
 
 class TestMergeDatasets:
     """Tests for the merge function."""
 
-    def test_merge_shape(self, era5_df, chirps_df, glofas_df):
-        merged = merge_datasets(era5_df, chirps_df, glofas_df)
+    def test_merge_shape(self, era5_df, runoff_df):
+        merged = merge_datasets(era5_df, runoff_df)
         assert len(merged) > 0
         assert "date" in merged.columns
-        assert "daily_rainfall" in merged.columns
-        assert "discharge" in merged.columns
+        assert "runoff" in merged.columns
         assert "temperature_2m" in merged.columns
 
-    def test_merge_no_nulls(self, era5_df, chirps_df, glofas_df):
-        merged = merge_datasets(era5_df, chirps_df, glofas_df)
+    def test_merge_no_nulls(self, era5_df, runoff_df):
+        merged = merge_datasets(era5_df, runoff_df)
         assert merged.isna().sum().sum() == 0
 
-    def test_merge_sorted_dates(self, era5_df, chirps_df, glofas_df):
-        merged = merge_datasets(era5_df, chirps_df, glofas_df)
+    def test_merge_sorted_dates(self, era5_df, runoff_df):
+        merged = merge_datasets(era5_df, runoff_df)
         dates = merged["date"].values
         assert (dates[1:] >= dates[:-1]).all()
 
@@ -69,14 +59,14 @@ class TestMergeDatasets:
 class TestFloodLabels:
     """Tests for flood label creation."""
 
-    def test_labels_binary(self, era5_df, chirps_df, glofas_df):
-        merged = merge_datasets(era5_df, chirps_df, glofas_df)
+    def test_labels_binary(self, era5_df, runoff_df):
+        merged = merge_datasets(era5_df, runoff_df)
         labeled = create_flood_labels(merged)
         assert "flood_label" in labeled.columns
         assert labeled["flood_label"].isin([0, 1]).all()
 
-    def test_labels_not_all_same(self, era5_df, chirps_df, glofas_df):
-        merged = merge_datasets(era5_df, chirps_df, glofas_df)
+    def test_labels_not_all_same(self, era5_df, runoff_df):
+        merged = merge_datasets(era5_df, runoff_df)
         labeled = create_flood_labels(merged)
         assert labeled["flood_label"].nunique() > 1
 
@@ -92,7 +82,9 @@ class TestValidation:
     def test_missing_data_detected(self):
         df = pd.DataFrame({
             "date": pd.date_range("2020-01-01", periods=10),
-            "daily_rainfall": [1, 2, np.nan, np.nan, np.nan, np.nan, 7, 8, 9, 10],
+            "daily_rainfall": [
+                1, 2, np.nan, np.nan, np.nan, np.nan, 7, 8, 9, 10,
+            ],
             "discharge": range(10),
         })
         report = validate_dataframe(df)

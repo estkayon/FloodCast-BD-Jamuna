@@ -33,6 +33,7 @@ class ModelStore:
         self.sequence_length: int | None = None
         self.scaler: Any = None
         self.metrics: dict[str, float] = {}
+        self.n_features: int = 8
         self._loaded: bool = False
 
     def load(self, model_dir: Path | None = None) -> None:
@@ -46,6 +47,7 @@ class ModelStore:
 
             self.model = load_xgboost(xgb_path)
             self.model_type = "xgboost"
+            self.n_features = self.model.n_features_in_
             self._loaded = True
             logger.info("Loaded XGBoost from %s", xgb_path)
             return
@@ -58,11 +60,16 @@ class ModelStore:
             self.model = load_lstm(lstm_path, input_size=1)
             self.model_type = "lstm_physics"
             self.sequence_length = 14
+            self.n_features = 1
             self._loaded = True
             logger.info("Loaded LSTM physics from %s", lstm_path)
             return
 
-        logger.warning("No trained model found in %s. API will return mock predictions.", model_dir)
+        logger.warning(
+            "No trained model found in %s. "
+            "API will return mock predictions.",
+            model_dir,
+        )
         self._loaded = False
 
     @property
@@ -74,7 +81,9 @@ class ModelStore:
         if not self._loaded:
             # Return mock predictions for testing
             rng = np.random.RandomState(42)
-            return rng.uniform(0.1, 0.9, size=len(features)).astype(np.float64)
+            return rng.uniform(
+                0.1, 0.9, size=len(features)
+            ).astype(np.float64)
 
         if self.model_type == "xgboost":
             from floodcast.models.xgboost_model import predict_xgboost
@@ -83,7 +92,10 @@ class ModelStore:
         else:
             from floodcast.models.lstm_model import predict_lstm
 
-            return predict_lstm(self.model, features, seq_len=self.sequence_length or 14)
+            return predict_lstm(
+                self.model, features,
+                seq_len=self.sequence_length or 14,
+            )
 
 
 # Simple in-memory rate limiter

@@ -63,8 +63,8 @@ def current_status(request: Request):
     """Current flood risk for Jamuna basin."""
     _check_rate_limit(request)
 
-    # Generate a prediction for today
-    dummy_features = np.zeros((1, 8), dtype=np.float64)
+    n_features = model_store.n_features
+    dummy_features = np.zeros((1, n_features), dtype=np.float64)
     prob = float(model_store.predict(dummy_features)[0])
 
     return StatusResponse(
@@ -87,7 +87,8 @@ def predict(request: Request, body: PredictRequest):
     if n_days > 90:
         raise HTTPException(400, "Maximum prediction range is 90 days")
 
-    dummy_features = np.zeros((n_days, 8), dtype=np.float64)
+    n_features = model_store.n_features
+    dummy_features = np.zeros((n_days, n_features), dtype=np.float64)
     probs = model_store.predict(dummy_features)
 
     predictions = []
@@ -148,10 +149,18 @@ def current_features(request: Request):
     features = [
         FeatureValues(
             date=today - timedelta(days=i),
-            daily_rainfall=round(float(np.random.uniform(0, 50)), 2),
-            temperature_2m=round(float(np.random.uniform(25, 35)), 2),
-            discharge=round(float(np.random.uniform(3000, 8000)), 2),
-            soil_moisture_layer1=round(float(np.random.uniform(0.2, 0.5)), 4),
+            daily_rainfall=round(
+                float(np.random.uniform(0, 50)), 2
+            ),
+            temperature_2m=round(
+                float(np.random.uniform(25, 35)), 2
+            ),
+            discharge=round(
+                float(np.random.uniform(3000, 8000)), 2
+            ),
+            soil_moisture_layer1=round(
+                float(np.random.uniform(0.2, 0.5)), 4
+            ),
         )
         for i in range(7)
     ]
