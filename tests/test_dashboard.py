@@ -43,11 +43,11 @@ class TestViewImports:
 class TestTheme:
     def test_import_theme(self):
         from floodcast.dashboard.theme import (
+            ACCENT,
             BG,
             CARD_BG,
-            ACCENT,
-            TEXT,
             MODEL_COLORS,
+            TEXT,
             chart_layout,
         )
         assert BG == "#0F172A"
