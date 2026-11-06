@@ -57,3 +57,4 @@ def chart_layout(**kw: object) -> dict:
     }
     defaults.update(kw)
     return defaults
+

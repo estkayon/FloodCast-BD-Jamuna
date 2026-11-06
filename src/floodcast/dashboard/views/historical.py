@@ -15,10 +15,8 @@ from sklearn.preprocessing import StandardScaler
 from floodcast.config import ROOT_DIR
 from floodcast.dashboard.theme import (
     ACCENT,
-    BORDER,
     DANGER,
     SUCCESS,
-    TEXT,
     TEXT_MUTED,
     WARNING,
     chart_layout,
@@ -567,3 +565,4 @@ def render() -> None:
         )
     )
     st.plotly_chart(fig, use_container_width=True)
+

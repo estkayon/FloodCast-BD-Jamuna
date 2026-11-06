@@ -61,7 +61,6 @@ def _model_cards(df: pd.DataFrame) -> None:
             continue
         best = sub.loc[sub["auc"].idxmax()]
         color = MODEL_COLORS.get(mt, ACCENT)
-        pr_auc = best.get("auc_pr", 0)
         recall = best.get("recall", 0)
         precision = best.get("precision", 0)
 
