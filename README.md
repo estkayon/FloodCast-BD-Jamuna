@@ -1,3 +1,14 @@
+---
+title: FloodCast BD
+emoji: 🌊
+colorFrom: orange
+colorTo: blue
+sdk: streamlit
+sdk_version: 1.31.1
+app_file: src/floodcast/dashboard/app.py
+pinned: false
+---
+
 <div align="center">
 
 <img src="assets/banner.svg" alt="FloodCast BD Banner" width="100%"/>
