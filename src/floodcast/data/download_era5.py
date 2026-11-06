@@ -2,8 +2,10 @@
 """Re-download ERA5-Land data as unarchived NetCDF (not ZIP)."""
 
 import logging
+
 import cdsapi
-from floodcast.config import Settings, ROOT_DIR
+
+from floodcast.config import ROOT_DIR, Settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

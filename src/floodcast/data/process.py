@@ -1,12 +1,13 @@
 # src/floodcast/data/process.py
 """Process raw data: spatial extraction, temporal alignment, merge."""
 
-from floodcast.config import settings, ROOT_DIR
 import logging
 from pathlib import Path
 
 import pandas as pd
 import xarray as xr
+
+from floodcast.config import ROOT_DIR
 
 logger = logging.getLogger(__name__)
 

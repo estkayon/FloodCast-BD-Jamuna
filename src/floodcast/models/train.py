@@ -90,8 +90,12 @@ def prepare_data(
     runoff_pct_col = "runoff_pct_90"
 
     if runoff_sum_col in df.columns:
-        runoff_train = df.loc[df_selected.index[train_mask], runoff_sum_col].values.astype(np.float64)
-        runoff_test = df.loc[df_selected.index[test_mask], runoff_sum_col].values.astype(np.float64)
+        runoff_train = df.loc[
+            df_selected.index[train_mask], runoff_sum_col
+        ].values.astype(np.float64)
+        runoff_test = df.loc[
+            df_selected.index[test_mask], runoff_sum_col
+        ].values.astype(np.float64)
     else:
         runoff_train = np.zeros(len(y_train))
         runoff_test = np.zeros(len(y_test))

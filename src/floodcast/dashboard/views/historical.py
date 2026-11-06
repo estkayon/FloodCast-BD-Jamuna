@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -137,7 +136,7 @@ def render() -> None:
                 line_dash="dash",
                 line_color="#ef4444",
                 opacity=0.7,
-                annotation_text=f"Flood danger level",
+                annotation_text="Flood danger level",
                 annotation_font_color="#ef4444",
                 annotation_font_size=11,
                 annotation_position="top right",
