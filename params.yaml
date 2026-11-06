@@ -11,19 +11,19 @@ time_range:
 
 feature_sets:
   set_a:
-    name: "Rainfall Only"
+    name: "Runoff Only"
     features:
-      - daily_rainfall
+      - runoff
   set_b:
-    name: "Rainfall + Discharge"
+    name: "Runoff + Weather"
     features:
-      - daily_rainfall
-      - discharge
+      - runoff
+      - temperature_2m
+      - soil_moisture_layer1
   set_c:
     name: "Full Feature Set"
     features:
-      - daily_rainfall
-      - discharge
+      - runoff
       - temperature_2m
       - soil_moisture_layer1
       - soil_moisture_layer2
@@ -43,23 +43,22 @@ lstm:
   num_layers: 2
   dropout: 0.2
   sequence_length: 14
-  forecast_horizon: 3
   batch_size: 32
-  max_epochs: 100
+  epochs: 50
   learning_rate: 0.001
   patience: 15
 
 physics:
-  lambda_grid:
-    - 0.01
-    - 0.05
-    - 0.1
-    - 0.5
+  lambda_mono: 0.1
+  lambda_corr: 0.1
 
 evaluation:
   holdout_years:
     - 2023
     - 2024
     - 2025
+  lead_times:
+    - 1
+    - 2
+    - 3
   cv_strategy: "leave_one_year_out"
-  bootstrap_iterations: 100

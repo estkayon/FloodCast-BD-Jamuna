@@ -1,12 +1,12 @@
+# src/floodcast/data/process.py
 """Process raw data: spatial extraction, temporal alignment, merge."""
 
+from floodcast.config import settings, ROOT_DIR
 import logging
 from pathlib import Path
 
 import pandas as pd
 import xarray as xr
-
-from floodcast.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +19,7 @@ def process_era5(raw_dir: Path) -> pd.DataFrame:
 
     datasets = []
     for f in files:
-        ds = xr.open_dataset(f)
-        # Spatial mean over study area
+        ds = xr.open_dataset(f, engine="netcdf4")
         ds_mean = ds.mean(dim=["latitude", "longitude"])
         df = ds_mean.to_dataframe().reset_index()
         datasets.append(df)
@@ -35,7 +34,6 @@ def process_era5(raw_dir: Path) -> pd.DataFrame:
         "u10": "wind_u_10m",
         "v10": "wind_v_10m",
     }
-    # Rename only columns that exist
     rename_map = {k: v for k, v in rename_map.items() if k in combined.columns}
     combined = combined.rename(columns=rename_map)
 
@@ -55,16 +53,15 @@ def process_era5(raw_dir: Path) -> pd.DataFrame:
     return combined
 
 
-def process_chirps(raw_dir: Path) -> pd.DataFrame:
-    """Process CHIRPS netCDF files into daily rainfall DataFrame."""
-    files = sorted(raw_dir.glob("chirps_*.nc"))
+def process_runoff(raw_dir: Path) -> pd.DataFrame:
+    """Process ERA5-Land runoff netCDF files into daily runoff DataFrame."""
+    files = sorted(raw_dir.glob("runoff_*.nc"))
     if not files:
-        raise FileNotFoundError(f"No CHIRPS files found in {raw_dir}")
+        raise FileNotFoundError(f"No runoff files found in {raw_dir}")
 
     datasets = []
     for f in files:
-        ds = xr.open_dataset(f)
-        # Spatial mean over study area
+        ds = xr.open_dataset(f, engine="netcdf4")
         ds_mean = ds.mean(dim=["latitude", "longitude"])
         df = ds_mean.to_dataframe().reset_index()
         datasets.append(df)
@@ -72,44 +69,10 @@ def process_chirps(raw_dir: Path) -> pd.DataFrame:
 
     combined = pd.concat(datasets, ignore_index=True)
 
-    if "precip" in combined.columns:
-        combined = combined.rename(columns={"precip": "daily_rainfall"})
-
-    if "time" in combined.columns:
-        combined["date"] = pd.to_datetime(combined["time"]).dt.date
-    combined["date"] = pd.to_datetime(combined["date"])
-
-    combined = combined[["date", "daily_rainfall"]].groupby("date").mean().reset_index()
-    # Replace negative rainfall with 0
-    combined["daily_rainfall"] = combined["daily_rainfall"].clip(lower=0)
-
-    logger.info("CHIRPS processed: %d rows", len(combined))
-    return combined
-
-
-def process_glofas(raw_dir: Path) -> pd.DataFrame:
-    """Process GloFAS GRIB/netCDF files into daily discharge DataFrame."""
-    files = sorted(raw_dir.glob("glofas_*.nc")) + sorted(raw_dir.glob("glofas_*.grib"))
-    if not files:
-        raise FileNotFoundError(f"No GloFAS files found in {raw_dir}")
-
-    datasets = []
-    for f in files:
-        if f.suffix == ".grib":
-            ds = xr.open_dataset(f, engine="cfgrib")
-        else:
-            ds = xr.open_dataset(f)
-        ds_mean = ds.mean(dim=["latitude", "longitude"])
-        df = ds_mean.to_dataframe().reset_index()
-        datasets.append(df)
-        ds.close()
-
-    combined = pd.concat(datasets, ignore_index=True)
-
-    # GloFAS variable name can vary
-    discharge_cols = [c for c in combined.columns if "dis" in c.lower()]
-    if discharge_cols:
-        combined = combined.rename(columns={discharge_cols[0]: "discharge"})
+    # ERA5 runoff variable name can be 'ro' or 'runoff'
+    runoff_cols = [c for c in combined.columns if c in ("ro", "runoff")]
+    if runoff_cols:
+        combined = combined.rename(columns={runoff_cols[0]: "runoff"})
 
     if "time" in combined.columns:
         combined["date"] = pd.to_datetime(combined["time"]).dt.date
@@ -117,46 +80,42 @@ def process_glofas(raw_dir: Path) -> pd.DataFrame:
         combined["date"] = pd.to_datetime(combined["valid_time"]).dt.date
 
     combined["date"] = pd.to_datetime(combined["date"])
-    combined = combined[["date", "discharge"]].groupby("date").mean().reset_index()
-    combined["discharge"] = combined["discharge"].clip(lower=0)
+    # Convert from m to mm for consistency
+    combined["runoff"] = combined["runoff"] * 1000.0
+    combined = combined[["date", "runoff"]].groupby("date").mean().reset_index()
+    combined["runoff"] = combined["runoff"].clip(lower=0)
 
-    logger.info("GloFAS processed: %d rows", len(combined))
+    logger.info("Runoff processed: %d rows", len(combined))
     return combined
 
 
 def create_flood_labels(df: pd.DataFrame) -> pd.DataFrame:
-    """Create binary flood labels from discharge data.
+    """Create binary flood labels from runoff data.
 
-    Label = 1 if discharge > 90th percentile OR daily_rainfall > 50mm.
+    Label = 1 if runoff > 90th percentile.
     """
-    discharge_90 = df["discharge"].quantile(0.90)
-    df["flood_label"] = (
-        (df["discharge"] > discharge_90) | (df["daily_rainfall"] > 50)
-    ).astype(int)
+    runoff_90 = df["runoff"].quantile(0.90)
+    df["flood_label"] = (df["runoff"] > runoff_90).astype(int)
 
     n_flood = df["flood_label"].sum()
     logger.info(
         "Flood labels created: %d flood days (%.1f%%) out of %d total, "
-        "discharge 90th pct = %.1f",
-        n_flood, 100 * n_flood / len(df), len(df), discharge_90,
+        "runoff 90th pct = %.4f mm",
+        n_flood, 100 * n_flood / len(df), len(df), runoff_90,
     )
     return df
 
 
 def merge_datasets(
     era5_df: pd.DataFrame,
-    chirps_df: pd.DataFrame,
-    glofas_df: pd.DataFrame,
+    runoff_df: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Merge all data sources on date, forward-fill small gaps."""
-    merged = chirps_df.merge(glofas_df, on="date", how="outer")
-    merged = merged.merge(era5_df, on="date", how="outer")
+    """Merge ERA5 and runoff data on date, forward-fill small gaps."""
+    merged = runoff_df.merge(era5_df, on="date", how="outer")
     merged = merged.sort_values("date").reset_index(drop=True)
 
-    # Forward fill gaps up to 3 days
     merged = merged.ffill(limit=3)
 
-    # Drop rows still having NaN after fill
     before = len(merged)
     merged = merged.dropna()
     after = len(merged)
@@ -171,20 +130,15 @@ def run_processing(
     raw_base_dir: Path | None = None,
     output_dir: Path | None = None,
 ) -> Path:
-    """Run full processing pipeline: process each source, merge, label, save.
-
-    Returns:
-        Path to the output parquet file.
-    """
-    raw_base_dir = raw_base_dir or (settings.ROOT_DIR / "data" / "raw")
-    output_dir = output_dir or (settings.ROOT_DIR / "data" / "processed")
+    """Run full processing pipeline."""
+    raw_base_dir = raw_base_dir or (ROOT_DIR / "data" / "raw")
+    output_dir = output_dir or (ROOT_DIR / "data" / "processed")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     era5_df = process_era5(raw_base_dir / "era5")
-    chirps_df = process_chirps(raw_base_dir / "chirps")
-    glofas_df = process_glofas(raw_base_dir / "glofas")
+    runoff_df = process_runoff(raw_base_dir / "runoff")
 
-    merged = merge_datasets(era5_df, chirps_df, glofas_df)
+    merged = merge_datasets(era5_df, runoff_df)
     merged = create_flood_labels(merged)
 
     output_path = output_dir / "features_raw.parquet"

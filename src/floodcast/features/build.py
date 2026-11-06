@@ -1,5 +1,4 @@
 # src/floodcast/features/build.py
-
 """Feature pipeline: orchestrate engineering + physics + feature set selection."""
 
 import logging
@@ -33,11 +32,7 @@ def load_feature_sets(params_path: Path | None = None) -> dict[str, list[str]]:
 
 
 def select_features(df: pd.DataFrame, feature_set: str) -> pd.DataFrame:
-    """Select columns for a given feature set (set_a, set_b, set_c).
-
-    Always includes date and flood_label. Includes all engineered
-    features derived from the base features in the set.
-    """
+    """Select columns for a given feature set (set_a, set_b, set_c)."""
     if not FEATURE_SETS:
         load_feature_sets()
 
@@ -46,7 +41,6 @@ def select_features(df: pd.DataFrame, feature_set: str) -> pd.DataFrame:
 
     base_features = FEATURE_SETS[feature_set]
 
-    # Find all columns derived from base features (lags, rolling, etc.)
     selected = ["date"]
     for col in df.columns:
         if col in ("date", "flood_label"):
@@ -56,19 +50,17 @@ def select_features(df: pd.DataFrame, feature_set: str) -> pd.DataFrame:
                 selected.append(col)
                 break
         # Always include calendar and physics features for all sets
-        if col in ("month", "day_of_year", "is_monsoon", "antecedent_rainfall_index",
-                    "rainfall_intensity"):
+        if col in ("month", "day_of_year", "is_monsoon", "antecedent_runoff_index"):
             if col not in selected:
                 selected.append(col)
-        # Include discharge-derived features only for sets with discharge
-        if "discharge" in base_features:
-            if col in ("discharge_pct_90", "soil_moisture_anomaly"):
+        # Include runoff-derived features only for sets with runoff
+        if "runoff" in base_features:
+            if col in ("runoff_pct_90", "soil_moisture_anomaly"):
                 if col not in selected:
                     selected.append(col)
 
     selected.append("flood_label")
 
-    # Remove duplicates preserving order
     seen = set()
     unique = []
     for c in selected:
@@ -83,11 +75,7 @@ def build_features(
     input_path: Path | None = None,
     output_dir: Path | None = None,
 ) -> Path:
-    """Run full feature pipeline: engineer + physics + save.
-
-    Returns:
-        Path to the output parquet file.
-    """
+    """Run full feature pipeline: engineer + physics + save."""
     input_path = input_path or (ROOT / "data" / "processed" / "features_raw.parquet")
     output_dir = output_dir or (ROOT / "data" / "processed")
     output_dir.mkdir(parents=True, exist_ok=True)

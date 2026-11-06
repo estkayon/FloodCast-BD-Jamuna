@@ -1,6 +1,6 @@
 # src/floodcast/models/train.py
 
-"""Training orchestrator: run all model x feature set combinations with MLflow tracking."""
+"""Training orchestrator: run all model x feature set x lead time combinations."""
 
 from __future__ import annotations
 
@@ -45,18 +45,28 @@ def load_params() -> dict[str, Any]:
 def prepare_data(
     df: pd.DataFrame,
     feature_set: str,
+    lead_time: int = 1,
     holdout_years: list[int] | None = None,
 ) -> dict[str, Any]:
-    """Engineer features, select set, split train/test.
+    """Engineer features, select set, shift label by lead_time, split train/test.
 
-    Returns dict with X_train, y_train, X_test, y_test, feature_names,
-    scaler, and physics auxiliary arrays.
+    Features from day T predict flood_label on day T+lead_time.
+    This prevents data leakage since the label is no longer from the same day.
     """
     holdout_years = holdout_years or [2023, 2024, 2025]
 
     df = engineer_features(df)
     df = add_physics_features(df)
     df_selected = select_features(df, feature_set)
+
+    # Shift flood_label into the future by lead_time days
+    df_selected = df_selected.copy()
+    df_selected["flood_label"] = df_selected["flood_label"].shift(-lead_time)
+    n_before = len(df_selected)
+    df_selected = df_selected.dropna(subset=["flood_label"])
+    df_selected["flood_label"] = df_selected["flood_label"].astype(int)
+    n_dropped = n_before - len(df_selected)
+    logger.info("Lead %dd: dropped %d rows from label shift", lead_time, n_dropped)
 
     # Split by year
     df_selected["year"] = pd.to_datetime(df_selected["date"]).dt.year
@@ -75,20 +85,20 @@ def prepare_data(
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
 
-    # Physics auxiliary arrays (from full df, aligned with selected rows)
-    rain_col = "daily_rainfall_rolling_7_sum"
-    disc_col = "discharge_pct_90"
+    # Physics auxiliary arrays (runoff-based)
+    runoff_sum_col = "runoff_sum_7d"
+    runoff_pct_col = "runoff_pct_90"
 
-    if rain_col in df.columns:
-        rain_train = df.loc[df_selected.index[train_mask], rain_col].values.astype(np.float64)
-        rain_test = df.loc[df_selected.index[test_mask], rain_col].values.astype(np.float64)
+    if runoff_sum_col in df.columns:
+        runoff_train = df.loc[df_selected.index[train_mask], runoff_sum_col].values.astype(np.float64)
+        runoff_test = df.loc[df_selected.index[test_mask], runoff_sum_col].values.astype(np.float64)
     else:
-        rain_train = np.zeros(len(y_train))
-        rain_test = np.zeros(len(y_test))
+        runoff_train = np.zeros(len(y_train))
+        runoff_test = np.zeros(len(y_test))
 
-    if disc_col in df.columns:
-        disc_train = df.loc[df_selected.index[train_mask], disc_col].values.astype(np.float64)
-        disc_test = df.loc[df_selected.index[test_mask], disc_col].values.astype(np.float64)
+    if runoff_pct_col in df.columns:
+        disc_train = df.loc[df_selected.index[train_mask], runoff_pct_col].values.astype(np.float64)
+        disc_test = df.loc[df_selected.index[test_mask], runoff_pct_col].values.astype(np.float64)
     else:
         disc_train = None
         disc_test = None
@@ -100,8 +110,8 @@ def prepare_data(
         "y_test": y_test,
         "feature_names": feature_cols,
         "scaler": scaler,
-        "rainfall_7d_train": rain_train,
-        "rainfall_7d_test": rain_test,
+        "rainfall_7d_train": runoff_train,
+        "rainfall_7d_test": runoff_test,
         "discharge_anomaly_train": disc_train,
         "discharge_anomaly_test": disc_test,
     }
@@ -112,20 +122,10 @@ def run_experiment(
     feature_set: str,
     data: dict[str, Any],
     params: dict[str, Any],
+    lead_time: int = 1,
     output_dir: Path | None = None,
 ) -> EvalResult:
-    """Train one model on one feature set and evaluate.
-
-    Args:
-        model_type: 'xgboost', 'lstm', or 'lstm_physics'
-        feature_set: 'set_a', 'set_b', or 'set_c'
-        data: Output of prepare_data()
-        params: From params.yaml
-        output_dir: Where to save model artifacts
-
-    Returns:
-        EvalResult with all metrics.
-    """
+    """Train one model on one feature set at one lead time and evaluate."""
     output_dir = output_dir or (ROOT / "models")
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -134,7 +134,7 @@ def run_experiment(
     X_test = data["X_test"]
     y_test = data["y_test"]
 
-    run_name = f"{model_type}_{feature_set}"
+    run_name = f"{model_type}_{feature_set}_lead{lead_time}d"
 
     if model_type == "xgboost":
         xgb_params = params.get("xgboost", {})
@@ -159,7 +159,6 @@ def run_experiment(
             patience=lstm_cfg.get("patience", 10),
         )
         y_prob = predict_lstm(model, X_test, seq_len=seq_len)
-        # Align y_test with sequence output
         y_test = y_test[seq_len - 1:]
         save_lstm(model, output_dir / f"{run_name}.pt")
 
@@ -200,12 +199,8 @@ def run_all_experiments(
     output_dir: Path | None = None,
     mlflow_tracking_uri: str | None = None,
 ) -> dict[str, EvalResult]:
-    """Run 3 models x 3 feature sets = 9 experiments with MLflow tracking.
-
-    Returns:
-        Dict mapping 'model_featureset' -> EvalResult.
-    """
-    data_path = data_path or (ROOT / "data" / "processed" / "merged_data.parquet")
+    """Run 3 models x 3 feature sets x 3 lead times = 27 experiments."""
+    data_path = data_path or (ROOT / "data" / "processed" / "features_raw.parquet")
     output_dir = output_dir or (ROOT / "models")
 
     params = load_params()
@@ -221,27 +216,31 @@ def run_all_experiments(
     model_types = ["xgboost", "lstm", "lstm_physics"]
     feature_sets = ["set_a", "set_b", "set_c"]
     holdout_years = params.get("evaluation", {}).get("holdout_years", [2023, 2024, 2025])
+    lead_times = params.get("evaluation", {}).get("lead_times", [1, 2, 3])
 
     results: dict[str, EvalResult] = {}
 
-    for fs in feature_sets:
-        data = prepare_data(df, fs, holdout_years)
+    for lead_time in lead_times:
+        logger.info("===== Lead time: %d day(s) =====", lead_time)
+        for fs in feature_sets:
+            data = prepare_data(df, fs, lead_time=lead_time, holdout_years=holdout_years)
 
-        for mt in model_types:
-            run_name = f"{mt}_{fs}"
-            logger.info("=== Running %s ===", run_name)
+            for mt in model_types:
+                run_name = f"{mt}_{fs}_lead{lead_time}d"
+                logger.info("=== Running %s ===", run_name)
 
-            with mlflow.start_run(run_name=run_name):
-                mlflow.log_param("model_type", mt)
-                mlflow.log_param("feature_set", fs)
-                mlflow.log_param("n_train", len(data["y_train"]))
-                mlflow.log_param("n_test", len(data["y_test"]))
-                mlflow.log_param("n_features", len(data["feature_names"]))
+                with mlflow.start_run(run_name=run_name):
+                    mlflow.log_param("model_type", mt)
+                    mlflow.log_param("feature_set", fs)
+                    mlflow.log_param("lead_time_days", lead_time)
+                    mlflow.log_param("n_train", len(data["y_train"]))
+                    mlflow.log_param("n_test", len(data["y_test"]))
+                    mlflow.log_param("n_features", len(data["feature_names"]))
 
-                result = run_experiment(mt, fs, data, params, output_dir)
+                    result = run_experiment(mt, fs, data, params, lead_time, output_dir)
 
-                mlflow.log_metrics(result.to_dict())
-                results[run_name] = result
+                    mlflow.log_metrics(result.to_dict())
+                    results[run_name] = result
 
     logger.info("All %d experiments complete.", len(results))
     return results

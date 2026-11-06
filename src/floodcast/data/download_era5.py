@@ -1,111 +1,58 @@
 # src/floodcast/data/download_era5.py
-
-"""Download ERA5-Land reanalysis data from CDS API."""
+"""Re-download ERA5-Land data as unarchived NetCDF (not ZIP)."""
 
 import logging
-import time
-from pathlib import Path
-
 import cdsapi
+from floodcast.config import Settings, ROOT_DIR
 
-from floodcast.config import settings
-
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-VARIABLES = [
-    "2m_temperature",
-    "volumetric_soil_water_layer_1",
-    "volumetric_soil_water_layer_2",
-    "10m_u_component_of_wind",
-    "10m_v_component_of_wind",
-]
 
-
-def download_era5(
-    output_dir: Path | None = None,
-    year_start: int | None = None,
-    year_end: int | None = None,
-) -> Path:
-    """Download ERA5-Land daily data for the study area.
-
-    Downloads sequentially with all 5 variables per request
-    (one month at a time) to minimize total requests.
-
-    Args:
-        output_dir: Directory to save files. Defaults to data/raw/era5/.
-        year_start: Start year. Defaults to settings.year_start.
-        year_end: End year. Defaults to settings.year_end.
-
-    Returns:
-        Path to the output directory containing downloaded files.
-    """
-    from floodcast.config import ROOT_DIR
-    output_dir = output_dir or (ROOT_DIR / "data" / "raw" / "era5")
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    year_start = year_start or settings.year_start
-    year_end = year_end or settings.year_end
-
+def download_era5() -> None:
+    cfg = Settings()
+    out_dir = ROOT_DIR / "data" / "raw" / "era5"
+    out_dir.mkdir(parents=True, exist_ok=True)
     client = cdsapi.Client()
 
-    area = [settings.lat_max, settings.lon_min, settings.lat_min, settings.lon_max]
-    days = [f"{d:02d}" for d in range(1, 32)]
+    months = [f"{m:02d}" for m in range(1, 13)]
+    total = (cfg.year_end - cfg.year_start + 1) * 12
+    counter = 0
 
-    total = (year_end - year_start + 1) * 12
-    done = 0
-
-    for year in range(year_start, year_end + 1):
-        for month in range(1, 13):
-            output_file = output_dir / f"era5_land_{year}_{month:02d}.nc"
-            if output_file.exists() and output_file.stat().st_size > 0:
-                done += 1
-                logger.info("[%d/%d] Skipping %d-%02d — exists", done, total, year, month)
+    for year in range(cfg.year_start, cfg.year_end + 1):
+        for mm in months:
+            counter += 1
+            fname = f"era5_land_{year}_{mm}.nc"
+            fpath = out_dir / fname
+            if fpath.exists() and fpath.stat().st_size > 1000:
+                logger.info("[%d/%d] Exists: %s", counter, total, fname)
                 continue
-
-            # Remove empty file from failed attempt
-            if output_file.exists():
-                output_file.unlink()
-
-            done += 1
-            logger.info("[%d/%d] Downloading ERA5-Land %d-%02d ...", done, total, year, month)
-
-            max_retries = 3
-            for attempt in range(1, max_retries + 1):
-                try:
-                    client.retrieve(
-                        "reanalysis-era5-land",
-                        {
-                            "variable": VARIABLES,
-                            "year": str(year),
-                            "month": f"{month:02d}",
-                            "day": days,
-                            "time": "12:00",
-                            "area": area,
-                            "data_format": "netcdf",
-                        },
-                        str(output_file),
-                    )
-                    logger.info("[%d/%d] Saved: %s", done, total, output_file.name)
-                    break
-                except Exception as e:
-                    logger.warning(
-                        "Attempt %d/%d failed for %d-%02d: %s",
-                        attempt, max_retries, year, month, e,
-                    )
-                    if output_file.exists():
-                        output_file.unlink()
-                    if attempt < max_retries:
-                        logger.info("Waiting 60s before retry...")
-                        time.sleep(60)
-                    else:
-                        logger.error(
-                                "Giving up on %d-%02d after %d attempts",
-                                year, month, max_retries,
-                            )
-
-    return output_dir
+            logger.info("[%d/%d] Downloading %s ...", counter, total, fname)
+            request = {
+                "variable": [
+                    "2m_temperature",
+                    "volumetric_soil_water_layer_1",
+                    "volumetric_soil_water_layer_2",
+                    "10m_u_component_of_wind",
+                    "10m_v_component_of_wind",
+                ],
+                "year": str(year),
+                "month": mm,
+                "day": [f"{d:02d}" for d in range(1, 32)],
+                "time": ["00:00"],
+                "area": [cfg.lat_max, cfg.lon_min, cfg.lat_min, cfg.lon_max],
+                "data_format": "netcdf",
+                "download_format": "unarchived",
+            }
+            try:
+                client.retrieve("reanalysis-era5-land", request, str(fpath))
+                size_kb = fpath.stat().st_size / 1024
+                logger.info("[%d/%d] Saved: %s (%.0f KB)", counter, total, fname, size_kb)
+            except Exception as e:
+                logger.error("[%d/%d] FAILED %s: %s", counter, total, fname, e)
+                if fpath.exists() and fpath.stat().st_size == 0:
+                    fpath.unlink()
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
     download_era5()
