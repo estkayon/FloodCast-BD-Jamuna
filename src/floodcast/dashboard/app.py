@@ -9,6 +9,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 os.chdir(Path(__file__).resolve().parent.parent.parent.parent)
 
+print("CWD:", os.getcwd())
+print("ROOT_DIR check:", Path(__file__).resolve().parent.parent.parent)
+print("Data exists:", (Path(__file__).resolve().parent.parent.parent / "data" / "processed" / "features_raw.parquet").exists())
+
 import streamlit as st
 
 st.set_page_config(
