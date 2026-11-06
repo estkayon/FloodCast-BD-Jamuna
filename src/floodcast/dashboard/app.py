@@ -1,6 +1,6 @@
 # src/floodcast/dashboard/app.py
 
-"""Multi-page Streamlit dashboard for FloodCast BD."""
+"""FloodCast BD Dashboard — Dark + Orange, Research-Focused."""
 
 from __future__ import annotations
 
@@ -13,265 +13,251 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ---- Slate + Blue Professional Theme ----
-st.markdown("""
+st.markdown(
+    """
 <style>
-    /* Hide sidebar */
-    [data-testid="stSidebar"] {display: none;}
-    section[data-testid="stSidebar"] {display: none;}
-    button[kind="header"] {display: none;}
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-
-    /* Background */
-    .stApp {
-        background-color: #0f172a;
+    /* ---- Hide sidebar & chrome ---- */
+    [data-testid="stSidebar"],
+    section[data-testid="stSidebar"],
+    button[kind="header"],
+    #MainMenu, footer, header {
+        display: none !important;
+        visibility: hidden !important;
     }
 
-    /* ---- Navbar ---- */
-    .navbar {
-        background: #1e293b;
-        padding: 14px 32px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-radius: 0 0 12px 12px;
-        margin: -1rem -1rem 24px -1rem;
-        border-bottom: 1px solid #334155;
+    /* ---- Dark background ---- */
+    html, body, .stApp, .main,
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMain"],
+    [data-testid="stMainBlockContainer"],
+    .block-container,
+    [data-testid="stVerticalBlock"] {
+        background-color: #0F172A !important;
     }
-    .navbar-brand {
-        font-size: 20px;
-        font-weight: 700;
-        color: #f1f5f9;
+
+    /* ---- Header ---- */
+    .fc-header {
+        text-align: center;
+        padding: 32px 0 8px 0;
     }
-    .navbar-brand span {
-        font-weight: 400;
-        color: #94a3b8;
-        font-size: 13px;
-        margin-left: 10px;
+    .fc-header h1 {
+        font-size: 28px;
+        font-weight: 800;
+        color: #F1F5F9;
+        margin: 0;
+        letter-spacing: -0.5px;
     }
-    .navbar-links {
-        display: flex;
-        gap: 4px;
+    .fc-header h1 span { color: #F97316; }
+    .fc-header p {
+        font-size: 12px;
+        color: #64748B;
+        margin: 6px 0 0 0;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
     }
-    .nav-btn {
-        color: #94a3b8;
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
+
+    /* ---- Tab pills ---- */
+    [data-testid="stTabs"] > div:first-child {
+        display: flex !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        border-bottom: none !important;
+        padding: 16px 0 24px 0 !important;
+        background: transparent !important;
     }
-    .nav-btn.active {
-        background: #334155;
-        color: #f1f5f9;
-        font-weight: 600;
+    [data-testid="stTabs"] button[data-baseweb="tab"] {
+        background: rgba(30,41,59,0.6) !important;
+        backdrop-filter: blur(8px) !important;
+        border: 1px solid #334155 !important;
+        border-radius: 10px !important;
+        padding: 10px 28px !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        color: #94A3B8 !important;
+        transition: all 0.25s ease !important;
+        white-space: nowrap !important;
+    }
+    [data-testid="stTabs"] button[data-baseweb="tab"]:hover {
+        background: rgba(249,115,22,0.08) !important;
+        border-color: #F97316 !important;
+        color: #F97316 !important;
+    }
+    [data-testid="stTabs"] button[aria-selected="true"] {
+        background: linear-gradient(135deg, #F97316, #EA580C) !important;
+        border-color: #F97316 !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 4px 16px rgba(249,115,22,0.3) !important;
+    }
+    [data-testid="stTabs"] [role="tablist"] > div:last-child {
+        display: none !important;
     }
 
     /* ---- Cards ---- */
-    .card {
-        background: #1e293b;
-        border-radius: 10px;
+    .ocard {
+        background: rgba(30,41,59,0.7);
+        backdrop-filter: blur(8px);
+        border-radius: 14px;
         padding: 20px 24px;
         margin-bottom: 12px;
         border: 1px solid #334155;
     }
-    .card-accent {
-        border-left: 3px solid #3b82f6;
+    .ocard-glow {
+        box-shadow: 0 0 20px rgba(249,115,22,0.08);
+        border-color: #475569;
+    }
+    .ocard-accent { border-left: 3px solid #F97316; }
+
+    /* ---- Metrics ---- */
+    .big-num {
+        font-size: 34px;
+        font-weight: 700;
+        color: #F1F5F9;
+        margin: 4px 0;
+        letter-spacing: -0.5px;
+    }
+    .sub-label {
+        font-size: 10px;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 700;
+    }
+    .metric-sub {
+        font-size: 12px;
+        color: #64748B;
+        margin-top: 2px;
     }
 
-    /* ---- Risk cards ---- */
-    .risk-safe {
-        background: #1e293b;
-        border-left: 3px solid #22c55e;
-        border: 1px solid #334155;
-        border-left: 3px solid #22c55e;
-        border-radius: 10px;
-        padding: 24px;
+    /* ---- Key finding ---- */
+    .finding {
+        background: linear-gradient(135deg, rgba(249,115,22,0.12), rgba(30,41,59,0.8));
+        border: 1px solid #9A3412;
+        border-radius: 14px;
+        padding: 18px 22px;
+        margin: 12px 0;
+        font-size: 14px;
+        color: #F1F5F9;
+        line-height: 1.7;
     }
-    .risk-caution {
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-left: 3px solid #eab308;
-        border-radius: 10px;
-        padding: 24px;
+    .finding strong { color: #FB923C; }
+
+    /* ---- Gradient line on cards ---- */
+    .grad-line {
+        height: 3px;
+        border-radius: 14px 14px 0 0;
+        margin: -20px -24px 16px -24px;
     }
-    .risk-warning {
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-left: 3px solid #f97316;
-        border-radius: 10px;
-        padding: 24px;
-    }
-    .risk-danger {
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-left: 3px solid #ef4444;
-        border-radius: 10px;
-        padding: 24px;
+
+    /* ---- Section header ---- */
+    .section-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin: 28px 0 14px 0;
     }
 
     /* ---- Typography ---- */
-    .label {
-        font-size: 11px;
-        color: #94a3b8;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-weight: 600;
-    }
-    .big-num {
-        font-size: 32px;
-        font-weight: 700;
-        color: #f1f5f9;
-        margin: 4px 0;
-    }
-    h1 { color: #f1f5f9 !important; font-weight: 700 !important; }
-    h2, h3 { color: #e2e8f0 !important; }
+    h1, h2, h3 { color: #F1F5F9 !important; }
+    .stMarkdown, .stMarkdown p { color: #CBD5E1 !important; }
+    .stCaption { color: #64748B !important; }
+    .stSelectbox label, .stRadio label { color: #94A3B8 !important; }
 
-    /* ---- Streamlit text ---- */
-    .stMarkdown, .stMarkdown p, .stCaption {
-        color: #cbd5e1 !important;
-    }
-    .stSelectbox label, .stRadio label {
-        color: #cbd5e1 !important;
-    }
-
-    /* ---- Card text ---- */
-    .card strong, .risk-safe strong, .risk-caution strong,
-    .risk-warning strong, .risk-danger strong {
-        color: #f1f5f9;
-    }
-    .card p, .card td, .card li, .card span,
-    .card ol li, .card ul li {
-        color: #cbd5e1;
-    }
-    .risk-safe div, .risk-caution div,
-    .risk-warning div, .risk-danger div {
-        color: #cbd5e1 !important;
-    }
-
-    /* ---- Buttons ---- */
-    .stButton > button {
-        background-color: #1e293b !important;
-        color: #cbd5e1 !important;
-        border: 1px solid #334155 !important;
-        border-radius: 6px !important;
-    }
-    .stButton > button:hover {
-        background-color: #334155 !important;
-        color: #f1f5f9 !important;
-    }
-    .stButton > button[kind="primary"] {
-        background-color: #3b82f6 !important;
-        color: #ffffff !important;
-        border: none !important;
-        font-weight: 600 !important;
-    }
-
-    /* ---- Selectbox ---- */
+    /* ---- Widgets ---- */
     .stSelectbox > div > div {
-        background-color: #1e293b !important;
-        color: #cbd5e1 !important;
+        background-color: #1E293B !important;
+        color: #F1F5F9 !important;
         border-color: #334155 !important;
+        border-radius: 8px !important;
     }
 
-    /* ---- Footer banner ---- */
-    .warning-banner {
-        background: #1e293b;
-        color: #94a3b8;
-        padding: 10px 16px;
-        border-radius: 8px;
-        font-size: 12px;
-        text-align: center;
-        margin-top: 24px;
-        border: 1px solid #334155;
-    }
-
-    /* ---- Charts container ---- */
+    /* ---- Plotly wrapper ---- */
     .stPlotlyChart {
-        background: #1e293b;
-        border-radius: 10px;
-        padding: 8px;
+        background: rgba(30,41,59,0.5);
+        border-radius: 14px;
+        padding: 12px;
         border: 1px solid #334155;
     }
 
-     /* ---- Misc ---- */
-    hr { border-color: #f1f5f9 !important; }
+    /* ---- Expander ---- */
+    [data-testid="stExpander"] {
+        background: #1E293B !important;
+        border: 1px solid #334155 !important;
+        border-radius: 14px !important;
+    }
+    [data-testid="stExpander"] summary,
+    [data-testid="stExpander"] summary span,
+    [data-testid="stExpanderDetails"],
+    [data-testid="stExpanderDetails"] p {
+        color: #F1F5F9 !important;
+    }
+
+    /* ---- Alert ---- */
     .stAlert {
-        background-color: #1e293b !important;
-        color: #f1f5f9 !important;
-        border: 1px solid #f1f5f9 !important;
+        background-color: #1E293B !important;
+        border: 1px solid #334155 !important;
+        color: #F1F5F9 !important;
+        border-radius: 12px !important;
     }
-    .stAlert p, .stAlert div, .stAlert span {
-        color: #f1f5f9 !important;
+
+    /* ---- Dataframe ---- */
+    [data-testid="stDataFrame"] {
+        background: #1E293B !important;
+        border-radius: 10px;
     }
-    .streamlit-expanderHeader { color: #f1f5f9 !important; }
-    .streamlit-expanderContent { color: #f1f5f9 !important; }
-    .stExpander { border-color: #f1f5f9 !important; }
-    .stExpander summary { color: #f1f5f9 !important; }
-    .stExpander summary span { color: #f1f5f9 !important; }
-    .stExpander summary p { color: #f1f5f9 !important; }
-    .stExpander details { color: #f1f5f9 !important; }
-    [data-testid="stExpander"] summary { color: #f1f5f9 !important; }
-    [data-testid="stExpander"] summary span { color: #f1f5f9 !important; }
-    [data-testid="stExpanderDetails"] { color: #f1f5f9 !important; }
-    [data-testid="stExpanderDetails"] p { color: #f1f5f9 !important; }
+
+    hr { border-color: #1E293B !important; }
+
+    /* ---- Footer ---- */
+    .fc-footer {
+        text-align: center;
+        padding: 20px;
+        margin-top: 40px;
+        font-size: 11px;
+        color: #475569;
+        border-top: 1px solid #1E293B;
+    }
+    .fc-footer a { color: #F97316; text-decoration: none; }
+
+    .stSpinner > div { color: #F97316 !important; }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
-# ---- Navbar ----
-if "page" not in st.session_state:
-    st.session_state.page = "Current Risk"
-
-PAGES = ["Current Risk", "Historical", "Model Comparison", "About"]
-
-nav_links = ""
-for p in PAGES:
-    active = "active" if p == st.session_state.page else ""
-    nav_links += f'<span class="nav-btn {active}">{p}</span>'
-
-st.markdown(f"""
-<div class="navbar">
-    <div class="navbar-brand">
-        🌊 FloodCast BD
-        <span>Jamuna River · Sirajganj</span>
-    </div>
-    <div class="navbar-links">
-        {nav_links}
-    </div>
+# ---- Header ----
+st.markdown(
+    """
+<div class="fc-header">
+    <h1>🌊 Flood<span>Cast</span> BD</h1>
+    <p>Jamuna River Basin · Physics-Informed Flood Nowcasting</p>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
-cols = st.columns(len(PAGES))
-for i, p in enumerate(PAGES):
-    with cols[i]:
-        if st.button(
-            p,
-            key=f"nav_{p}",
-            use_container_width=True,
-            type="primary" if p == st.session_state.page else "secondary",
-        ):
-            st.session_state.page = p
-            st.rerun()
+# ---- Two research tabs ----
+tab1, tab2 = st.tabs(["📊 Model Performance", "📈 Historical"])
 
-st.divider()
+with tab1:
+    from floodcast.dashboard.views.model_performance import render as render_perf
 
-if st.session_state.page == "Current Risk":
-    from floodcast.dashboard.views.current_risk import render
-    render()
-elif st.session_state.page == "Historical":
-    from floodcast.dashboard.views.historical import render
-    render()
-elif st.session_state.page == "Model Comparison":
-    from floodcast.dashboard.views.model_comparison import render
-    render()
-elif st.session_state.page == "About":
-    from floodcast.dashboard.views.about import render
-    render()
+    render_perf()
 
-st.markdown("""
-<div class="warning-banner">
-    ⚠️ Research prototype — Not for emergency decisions.
-    Always follow FFWC and local authority instructions.
+with tab2:
+    from floodcast.dashboard.views.historical import render as render_hist
+
+    render_hist()
+
+# ---- Footer ----
+st.markdown(
+    """
+<div class="fc-footer">
+    Research prototype · ERA5-Land (ECMWF) · Not for emergency decisions<br>
+    Built by Md. Estiak Rahman Ayon ·
+    <a href="https://github.com/estkayon/FloodCast-BD-Jamuna" target="_blank">GitHub</a>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
